@@ -4,6 +4,7 @@ Python library for the Withings Health API.
 Withings Health API
 <https://developer.health.withings.com/api>
 """
+import typing
 from abc import abstractmethod
 import datetime
 import json
@@ -227,7 +228,8 @@ class AbstractWithingsApi:
         enddateymd: Optional[DateType] = arrow.utcnow(),
         offset: Optional[int] = None,
         lastupdate: Optional[DateType] = arrow.utcnow(),
-    ) -> SleepGetSummaryResponse:
+        get_raw_response: bool = False,
+    ) -> SleepGetSummaryResponse | dict[str, typing.Any]:
         """Get sleep summary."""
         params: Final[ParamsType] = {}
 
@@ -255,9 +257,12 @@ class AbstractWithingsApi:
         )
         update_params(params, "action", "getsummary")
 
-        return SleepGetSummaryResponse(
-            **self.request(path=self.PATH_V2_SLEEP, params=params)
-        )
+        response = self.request(path=self.PATH_V2_SLEEP, params=params)
+
+        if get_raw_response:
+            return response
+
+        return SleepGetSummaryResponse(**response)
 
     def heart_get(self, signalid: int) -> HeartGetResponse:
         """Get ECG recording."""
@@ -278,10 +283,16 @@ class AbstractWithingsApi:
         params: Final[ParamsType] = {}
 
         update_params(
-            params, "startdate", startdate, lambda val: arrow.get(val).int_timestamp,
+            params,
+            "startdate",
+            startdate,
+            lambda val: arrow.get(val).int_timestamp,
         )
         update_params(
-            params, "enddate", enddate, lambda val: arrow.get(val).int_timestamp,
+            params,
+            "enddate",
+            enddate,
+            lambda val: arrow.get(val).int_timestamp,
         )
         update_params(params, "offset", offset)
         update_params(params, "action", "list")
